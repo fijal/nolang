@@ -77,6 +77,13 @@ def get_parser():
         return ast.Function(p[1].getstr(), p[2].get_names(),
                             p[4].get_element_list())
 
+    @pg.production('function : FUNCTION IDENTIFIER arglist LEFT_CURLY_BRACE'
+                   ' function_body expression RIGHT_CURLY_BRACE')
+    def function_function_body_implicit_return(state, p):
+        statements = p[4].get_element_list()
+        statements.append(ast.Return(p[5]))
+        return ast.Function(p[1].getstr(), p[2].get_names(), statements)
+
     @pg.production('function_body :')
     def function_body_empty(state, p):
         return ast.FunctionBody([])

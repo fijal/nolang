@@ -64,6 +64,26 @@ class TestParseFunctionBody(BaseTest):
                             ast.Identifier('s'), ast.Identifier('i')))]),
                      ast.Return(ast.Identifier('s'))]
 
+    def test_implicit_return(self):
+        r = self.parse('''
+            var i, s;
+            i = 0;
+            while i < 10 {
+                i = i + 1;
+                s = s + i;
+            }
+            s
+            ''')
+        assert r == [ast.VarDeclaration(['i', 's']),
+                     ast.Assignment('i', ast.Number(0)),
+                     ast.While(ast.BinOp('<', ast.Identifier('i'),
+                        ast.Number(10)), [
+                          ast.Assignment('i', ast.BinOp('+',
+                            ast.Identifier('i'), ast.Number(1))),
+                          ast.Assignment('s', ast.BinOp('+',
+                            ast.Identifier('s'), ast.Identifier('i')))]),
+                     ast.Return(ast.Identifier('s'))]
+
 
 class TestFullProgram(BaseTest):
 
