@@ -1,7 +1,7 @@
 from rply import LexerGenerator
 from rply.lexer import Lexer, LexerStream
 from rply.token import Token as RplyToken
-from rpython.rlib.runicode import str_decode_utf_8
+from rpython.rlib.runicode import str_decode_utf_8, unicode_encode_utf_8, UNICHR
 
 
 class Token(RplyToken):
@@ -83,6 +83,11 @@ KEYWORD_DICT = dict.fromkeys(KEYWORDS)
 STRING_RULES = [
     ('ESC_QUOTE', r'\\"'),
     ('ESC_ESC', r'\\\\'),
+    ('ESC_SIMPLE', r'\\[abfnrtv0]'),
+    ('ESC_HEX_8', r'\\x[0-9a-fA-F]{2}'),
+    ('ESC_HEX_16', r'\\u[0-9a-fA-F]{4}'),
+    ('ESC_HEX_ANY', r'\\u\{[0-9a-fA-F]+\}'),
+    ('ESC_UNRECOGNISED', r'\\[^abfnrtv0xu"\\]'),
     ('CHAR', r'[^"\\]'),
     ('CLOSING_QUOTE', r'"'),
 ]
@@ -158,6 +163,11 @@ def get_string_lexer():
     return lg.build()
 
 
+def hex_to_utf8(s):
+    uchr = UNICHR(int(s, 16))
+    return unicode_encode_utf_8(uchr, len(uchr), 'strict')
+
+
 class QuillLexerStream(SRLexerStream):
     _last_token = None
 
@@ -172,8 +182,23 @@ class QuillLexerStream(SRLexerStream):
                 parts.append('"')
             elif t.name == 'ESC_ESC':
                 parts.append('\\')
+            elif t.name == 'ESC_SIMPLE':
+                parts.append({
+                    'a': '\a',
+                    'b': '\b',
+                    'f': '\f',
+                    'n': '\n',
+                    'r': '\r',
+                    't': '\t',
+                    'v': '\v',
+                    '0': '\0',
+                }[t.value[1]])
+            elif t.name in ['ESC_HEX_8', 'ESC_HEX_16']:
+                parts.append(hex_to_utf8(t.value[2:]))
+            elif t.name == 'ESC_HEX_ANY':
+                parts.append(hex_to_utf8(t.value[3:-1]))
             else:
-                assert t.name == 'CHAR'
+                assert t.name in ['ESC_UNRECOGNISED', 'CHAR']
                 parts.append(t.value)
         else:
             raise self.parse_error("unterminated string")

@@ -25,6 +25,8 @@ class TestStringParser(BaseTest):
             pass
         except UnicodeDecodeError:
             pass
+        except ValueError:
+            pass
         else:
             raise Exception("Incorrectly parsed %r as %r." % (expr, value))
 
@@ -45,6 +47,43 @@ class TestStringParser(BaseTest):
         assert self.parse(r'"\\"') == '\\'
         assert self.parse(r'"\\\""') == '\\"'
         assert self.parse(r'"\\\"\\"') == '\\"\\'
+
+    def test_simple_escapes(self):
+        assert self.parse(r'"\a"') == '\a'
+        assert self.parse(r'"\b"') == '\b'
+        assert self.parse(r'"\f"') == '\f'
+        assert self.parse(r'"\n"') == '\n'
+        assert self.parse(r'"\r"') == '\r'
+        assert self.parse(r'"\t"') == '\t'
+        assert self.parse(r'"\v"') == '\v'
+        assert self.parse(r'"\0"') == '\0'
+
+    def test_unrecognised_escapes(self):
+        assert self.parse(r'"\q"') == '\\q'
+        assert self.parse(r'"\1"') == '\\1'
+
+    def test_hex_escapes(self):
+        assert self.parse(r'"\x20"') == ' '
+        assert self.parse(r'"\xff"') == '\xc3\xbf'
+        assert self.parse(r'"\u0020"') == ' '
+        assert self.parse(r'"\u1020"') == '\xe1\x80\xa0'
+        assert self.parse(r'"\uffff"') == '\xef\xbf\xbf'
+        assert self.parse(r'"\u{0}"') == '\x00'
+        assert self.parse(r'"\u{20}"') == ' '
+        assert self.parse(r'"\u{000000020}"') == ' '
+        assert self.parse(r'"\u{1020}"') == '\xe1\x80\xa0'
+        assert self.parse(r'"\u{ffff}"') == '\xef\xbf\xbf'
+        assert self.parse(r'"\u{10000}"') == '\xf0\x90\x80\x80'
+        assert self.parse(r'"\u{102030}"') == '\xf4\x82\x80\xb0'
+        assert self.parse(r'"\u{10ffff}"') == '\xf4\x8f\xbf\xbf'
+
+    def test_bad_hex_excapes(self):
+        self.parse_bad(r'"\xf"')
+        self.parse_bad(r'"\xfq"')
+        self.parse_bad(r'"\u000q"')
+        self.parse_bad(r'"\u{}"')
+        self.parse_bad(r'"\u{q}"')
+        self.parse_bad(r'"\u{110000}"')
 
     def test_bad_utf8(self):
         self.parse_bad('"\xff"')
