@@ -77,8 +77,8 @@ opcodes = [
     Opcode('JUMP_IF_FALSE_NOPOP', 1, 0, 'peek value from the stack and jump if '
                                         'false to a given position'),
     Opcode('JUMP_ABSOLUTE', 1, 0, 'jump to an absolute position'),
-    Opcode('CALL', 1, 255, 'take N arguments from the stack, pack them into'
-                           'args and call the next element'),
+    Opcode('CALL', 2, 255, 'take N arguments and M named from the stack, pack'
+                           ' them into args, and call the next element'),
     Opcode('RETURN', 0, -1, 'return the top of stack')
 ]
 

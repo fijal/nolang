@@ -29,12 +29,12 @@ class W_UserType(W_Root):
         for item in self.class_elements_w:
             item.setup(space)
 
-    def call(self, space, interpreter, args_w):
+    def call(self, space, interpreter, args_w, namedargs_w):
         if self.allocate is None:
             raise Exception("cannot be called like that")
-        w_obj = space.call(self.allocate, [self] + args_w)
+        w_obj = space.call(self.allocate, [self] + args_w, namedargs_w)
         if '__init__' in self._dict_w:
-            space.call(self._dict_w['__init__'], [w_obj] + args_w)
+            space.call(self._dict_w['__init__'], [w_obj] + args_w, namedargs_w)
         elif self.default_alloc:
             if len(args_w) != 0:
                 raise space.apperr(space.w_argerror, "Default constructor"

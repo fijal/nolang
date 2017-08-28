@@ -61,6 +61,14 @@ class TestDict(BaseTest):
         assert self.space.utf8_w(w_res) == "foo"
         w_res = self.interpret_expr('return {"a": "foo"}.get("b", "dflt");')
         assert self.space.utf8_w(w_res) == "dflt"
+        w_res = self.interpret_expr('return {"a": "foo"}.get("b", default="dflt");')
+        assert self.space.utf8_w(w_res) == "dflt"
+
+    def test_get_no_default(self):
+        w_res = self.interpret_expr('return {"a": "foo"}.get("a");')
+        assert self.space.utf8_w(w_res) == "foo"
+        w_res = self.interpret_expr('return {"a": "foo"}.get("b");')
+        assert w_res is self.space.w_None
 
     def test_getitem(self):
         w_res = self.interpret_expr('''

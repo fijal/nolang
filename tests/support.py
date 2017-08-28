@@ -67,11 +67,19 @@ class BaseTest(object):
             args_w = [self.space.newlist([self.space.newtext(x) for x in args])]
         else:
             args_w = []
-        return self.space.call_method(w_mod, 'main', args_w)
+        return self.space.call_method(w_mod, 'main', args_w, [])
 
     def assert_expr_parse_error(self, code):
         try:
             value = self.interpret_expr(code)
+        except ParseError:
+            pass
+        else:
+            raise Exception("Incorrectly parsed %r as %r." % (code, value))
+
+    def assert_parse_error(self, code):
+        try:
+            value = self.interpret(code)
         except ParseError:
             pass
         else:

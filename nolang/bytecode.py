@@ -98,7 +98,8 @@ class Bytecode(object):
             opcode = opcodes.opcodes[ord(bc[i])]
             if opcode.stack_effect == 255:
                 var = (ord(bc[i + 1]) << 8) + ord(bc[i + 2])
-                stack_depth -= var
+                var2 = (ord(bc[i + 3]) << 8) + ord(bc[i + 4])
+                stack_depth -= var + 2 * var2
             elif opcode.stack_effect == 254:
                 var = (ord(bc[i + 1]) << 8) + ord(bc[i + 2])
                 stack_depth -= var - 1

@@ -68,6 +68,11 @@ class Number(AstNode):
         AstNode.__init__(self, srcpos)
         self.value = value
 
+    def getintvalue(self):
+        # XXX Temporary hack to get an int value out of this when using it as a
+        # default value.
+        return self.value
+
     def compile(self, state):
         no = state.add_int_constant(self.value)
         state.emit(self.getstartidx(), opcodes.LOAD_CONSTANT, no)
@@ -493,12 +498,31 @@ class Setitem(AstNode):
         state.emit(self.rhand.getendidx(), opcodes.SETITEM)
 
 
+class Arg(AstNode):
+    def __init__(self, name, tp, default, srcpos=None):
+        AstNode.__init__(self, srcpos)
+        self.name = name
+        self.tp = tp
+        self.default = default
+
+    def compile(self, state):
+        raise NotImplementedError("XXX")
+
+
+class ArgsPartial(AstNode):
+    def __init__(self, args):
+        self.args = args
+
+    def get_args(self):
+        return self.args
+
+
 class ArgList(AstNode):
     def __init__(self, arglist, srcpos):
         AstNode.__init__(self, srcpos)
         self.arglist = arglist
 
-    def get_vars(self):
+    def get_args(self):
         return self.arglist
 
 
@@ -568,17 +592,44 @@ class Assignment(AstNode):
         state.emit(self.expr.getstartidx(), opcodes.STORE, varno)
 
 
+class NamedArg(AstNode):
+    def __init__(self, argname, expr, srcpos=None):
+        AstNode.__init__(self, srcpos)
+        self.argname = argname
+        self.expr = expr
+
+    def compile(self, state):
+        self.expr.compile(state)
+        no = state.add_str_constant(self.argname)
+        state.emit(self.getstartidx(), opcodes.LOAD_CONSTANT, no)
+
+
+class ArgListPartial(AstNode):
+    def __init__(self, args, named_args):
+        self.args = args
+        self.named_args = named_args
+
+    def get_arg_list(self):
+        return self.args
+
+    def get_named_arg_list(self):
+        return self.named_args
+
+
 class Call(AstNode):
-    def __init__(self, expr, arglist, srcpos=None):
+    def __init__(self, expr, arglist, named_args, srcpos=None):
         AstNode.__init__(self, srcpos)
         self.left_hand = expr
         self.arglist = arglist
+        self.named_args = named_args
 
     def compile(self, state):
         self.left_hand.compile(state)
+        for named_arg in self.named_args:
+            named_arg.compile(state)
         for arg in self.arglist:
             arg.compile(state)
-        state.emit(self.left_hand.getendidx(), opcodes.CALL, len(self.arglist))
+        state.emit(self.left_hand.getendidx(), opcodes.CALL, len(self.arglist), len(self.named_args))
 
 
 class Return(AstNode):

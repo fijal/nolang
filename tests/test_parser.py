@@ -161,10 +161,21 @@ class TestExpressionParser(BaseTest):
 
     def test_various_kinds_of_calls(self):
         r = self.parse('x(1, 2, 3)')
-        assert r == ast.Call(ast.Identifier('x'), [ast.Number(1), ast.Number(2),
-            ast.Number(3)])
+        assert r == ast.Call(ast.Identifier('x'),
+                             [ast.Number(1), ast.Number(2), ast.Number(3)], [])
         r = self.parse('(1)(2)')
-        assert r == ast.Call(ast.Number(1), [ast.Number(2)])
+        assert r == ast.Call(ast.Number(1), [ast.Number(2)], [])
+
+    def test_call_with_named_args(self):
+        r = self.parse('x(a=1, b=2)')
+        assert r == ast.Call(ast.Identifier('x'), [], [
+            ast.NamedArg('a', ast.Number(1)),
+            ast.NamedArg('b', ast.Number(2)),
+        ])
+        r = self.parse('x(1, b=2)')
+        assert r == ast.Call(ast.Identifier('x'), [ast.Number(1)], [
+            ast.NamedArg('b', ast.Number(2)),
+        ])
 
 
 class TestParseFunctionBody(BaseTest):
@@ -239,8 +250,22 @@ class TestFullProgram(BaseTest):
             }
             ''')
         expected = ast.Program([
-            ast.Function('foo', [ast.Var('a0', ast.NoTypeDecl()),
-                                 ast.Var('a1', ast.NoTypeDecl())], [
+            ast.Function('foo', [
+                ast.Arg('a0', ast.NoTypeDecl(), None),
+                ast.Arg('a1', ast.NoTypeDecl(), None)], [
+            ], lineno=1)
+        ])
+        assert r == expected
+
+    def test_function_declaration_arg_defaults(self):
+        r = self.parse('''
+            def foo(a0, a1=1) {
+            }
+            ''')
+        expected = ast.Program([
+            ast.Function('foo', [
+                ast.Arg('a0', ast.NoTypeDecl(), None),
+                ast.Arg('a1', ast.NoTypeDecl(), ast.Number(1))], [
             ], lineno=1)
         ])
         assert r == expected

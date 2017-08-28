@@ -3,7 +3,7 @@
 
 import types
 import py
-from nolang.function import W_BuiltinFunction, W_Property
+from nolang.function import FuncArg, W_BuiltinFunction, W_Property
 from nolang.objects.usertype import W_UserType
 
 
@@ -40,9 +40,21 @@ def wrap_function(space, f, name=None, exp_name=None):
     if name is None:
         name = f.__name__
     argnames = f.__code__.co_varnames[:f.__code__.co_argcount]
+    argdefaults = {}
+    if f.__defaults__ is not None:
+        defs = f.__defaults__
+        for i in range(len(defs)):
+            ai = len(argnames) - len(defs) + i
+            if defs[i] is None:
+                argdefaults[argnames[ai]] = space.w_None
+            elif isinstance(defs[i], int):
+                argdefaults[argnames[ai]] = space.newint(defs[i])
+            else:
+                raise NotImplementedError(
+                    "XXX Default handling not supported for %s" % (defs[i],))
     lines = ['def %s(space, args_w):' % name]
     j = 0
-    numargs = 0
+    arglist = []
     d = {'orig_' + name: f}
     for i, argname in enumerate(argnames):
         extralines = []
@@ -50,14 +62,14 @@ def wrap_function(space, f, name=None, exp_name=None):
             argval = 'space'
         elif argname == 'args_w':
             argval = 'args_w'
-            numargs = -1
+            arglist = None
             assert i == len(argnames) - 1
         elif argname == 'self':
             if not isinstance(f, types.MethodType):
                 raise Exception("self argument, but argument is not a method")
             argval = 'args_w[0]'
             j += 1
-            numargs += 1
+            arglist.append(FuncArg(argname, None, argdefaults.get(argname)))
             msg = "Expected %s object, got %%s" % exp_name
             extralines = [
                 '    if not isinstance(arg%d, self_tp):' % i,
@@ -68,17 +80,20 @@ def wrap_function(space, f, name=None, exp_name=None):
         elif argname.startswith('w_'):
             argval = 'args_w[%d]' % j
             j += 1
-            numargs += 1
+            arglist.append(FuncArg(argname, None, argdefaults.get(argname)))
         else:
             if hasattr(f, 'unwrap_spec'):
                 spec = f.unwrap_spec.get(argname, None)
             else:
                 spec = None
-            numargs += 1
+            arglist.append(FuncArg(argname, None, argdefaults.get(argname)))
             if spec is None:
                 raise Exception("No spec found for %s while wrapping %s" %
                                 (argname, name))
-            if spec == 'str':
+            if spec == 'wrapped':
+                argval = 'args_w[%d]' % j
+                j += 1
+            elif spec == 'str':
                 argval = 'space.utf8_w(args_w[%d])' % j
                 j += 1
             elif spec == 'int':
@@ -101,7 +116,7 @@ def wrap_function(space, f, name=None, exp_name=None):
     exported_name = name
     if getattr(f, 'unwrap_parameters', None):
         exported_name = f.unwrap_parameters.get('name', exported_name)
-    return W_BuiltinFunction(exported_name, d[name], numargs)
+    return W_BuiltinFunction(exported_name, d[name], arglist)
 
 
 def wrap_type(space, tp):

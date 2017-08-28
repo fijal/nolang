@@ -88,7 +88,7 @@ def run_code(fname):
     w_mod = compile_module(space, fname, dotted_name, source, ast, importer)
     w_mod.setup(space)
     try:
-        space.call_method(w_mod, 'main', [])
+        space.call_method(w_mod, 'main', [], [])
     except AppError as e:
         os.write(2, format_traceback(space, e))
         return 1
