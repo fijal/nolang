@@ -259,7 +259,9 @@ class QuillLexer(object):
         return self.states[name]
 
     def lex(self, filename, s):
-        return QuillLexerStream(self, filename, s)
+        for item in QuillLexerStream(self, filename, s):
+            print item
+            yield item
 
 
 class LexerState(object):

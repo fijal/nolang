@@ -493,10 +493,14 @@ def get_parser():
     def atom_dot_identifier(state, p):
         return ast.Getattr(p[0], p[2].getstr(), srcpos=sr(p))
 
+    # permit a trailing semicolon in the list to work around ASI putting one there
+    @pg.production('atom : LEFT_SQUARE_BRACKET expression_list SEMICOLON RIGHT_SQUARE_BRACKET')
     @pg.production('atom : LEFT_SQUARE_BRACKET expression_list RIGHT_SQUARE_BRACKET')
     def atom_list_literal(state, p):
         return ast.List(p[1].get_element_list(), srcpos=sr(p))
 
+    # permit a trailing semicolon in the dict to work around ASI putting one there
+    @pg.production('atom : LEFT_CURLY_BRACE dict_pair_list SEMICOLON RIGHT_CURLY_BRACE')
     @pg.production('atom : LEFT_CURLY_BRACE dict_pair_list RIGHT_CURLY_BRACE')
     def atom_dict_literal(state, p):
         return ast.Dict(p[1].get_element_list(), srcpos=sr(p))

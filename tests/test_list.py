@@ -148,7 +148,10 @@ class TestList(BaseTest):
             def main() {
                 var l;
                 l = [];
-                [check(l, 0), check(l, 1)];
+                [
+                    check(l, 0),
+                    check(l, 1)
+                ];
                 return l;
             }
         ''')

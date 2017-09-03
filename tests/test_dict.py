@@ -72,8 +72,11 @@ class TestDict(BaseTest):
 
     def test_setitem(self):
         w_res = self.interpret_expr('''
-            var x;
-            x = {"a": "foo", 1: "bar"};
+            var x
+            x = {
+                "a": "foo",
+                1: "bar"
+            };
             x["c"] = "baz";
             return x;
         ''')
